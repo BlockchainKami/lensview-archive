@@ -3,6 +3,10 @@
     import logo from '$lib/images/Lensview.png';
     import anjay from '$lib/images/Anjay.png';
     import parikshit from '$lib/images/Parikshit.png';
+    import lens from '$lib/images/lens.png';
+    import polygon from '$lib/images/polygon.png';
+    import graph from '$lib/images/graph.png';
+    import ipfs from '$lib/images/ipfs.png';
     import {ethers, providers} from 'ethers'
     import {
         createClient,
@@ -13,7 +17,6 @@
     } from '../api'
     import {parseJwt} from "../utils.js";
     import PROFILE from "./profile-store.js"
-    import getLensContent from '../lensPublication'
     import {onMount} from "svelte";
 
 
@@ -40,7 +43,7 @@
             await console.log("User profile : " + JSON.stringify(userProfile))
 
             profileId = userProfile["id"];
-            totalPostedPost = userProfile["stats"]["totalPosts"] + 4;
+            totalPostedPost = userProfile["stats"]["totalPosts"] + 3;
 
             console.log("Profile Id : " + profileId + " totalPostedPost : " + totalPostedPost);
         } catch (err) {
@@ -79,6 +82,7 @@
 
     /*****************************************************/
 
+    let isFetching = false;
     /**
      * Description : Post Fetch
      */
@@ -140,6 +144,7 @@ mutation addUrlData($url: String!, $pid: String!) {
 `
 
     const newUrl = (urlString, pid) => {
+        isFetching = true
         console.log("newUrl called");
         fetch('http://127.0.0.1:5000', {
             method: 'POST',
@@ -148,7 +153,10 @@ mutation addUrlData($url: String!, $pid: String!) {
                 query: newURLQuery,
                 variables: {url: urlString, pid: pid}
             })
-        }).then(res => res.json()).then(data => {
+        }).then(res => res.json()).then(async data => {
+            await setTimeout(() => {}, 2000)
+            fetchUrlDB();
+            isFetching = false
             console.log("New Url Add : " + JSON.stringify(data))
         })
     }
@@ -167,6 +175,7 @@ mutation addUrlData($url: String!, $pid: String!) {
 `
 
     const addPublication = (urlString, pid) => {
+        isFetching = true
         console.log("addPublication");
         fetch('http://127.0.0.1:5000', {
             method: 'POST',
@@ -175,7 +184,10 @@ mutation addUrlData($url: String!, $pid: String!) {
                 query: addPIDQuery,
                 variables: {url: urlString, pid: pid}
             })
-        }).then(res => res.json()).then(data => {
+        }).then(res => res.json()).then(async data => {
+            await setTimeout(() => {}, 2000)
+            fetchUrlDB();
+            isFetching = false;
             console.log("PID added : " + JSON.stringify(data))
         })
     }
@@ -299,7 +311,7 @@ mutation addUrlData($url: String!, $pid: String!) {
 
     let savePost;
     let userEnteredContent = "";
-
+    let isPosting = false
     let profile = {};
 
     PROFILE.subscribe((resp) => {
@@ -334,6 +346,7 @@ mutation addUrlData($url: String!, $pid: String!) {
     }
 
     savePost = async () => {
+        isPosting = true
         console.log("Post called :");
         const contentURI = await uploadToIPFS()
         const {accessToken} = await refreshAuthToken()
@@ -377,6 +390,11 @@ mutation addUrlData($url: String!, $pid: String!) {
             await tx.wait()
 
             console.log('successfully created post: tx hash', tx.hash);
+            console.log('successfully created post: tx hash', JSON.stringify(tx));
+
+            isPosting = false;
+            userEnteredContent = "";
+
             console.log("After successfull tx totalPostedPost : " + totalPostedPost)
             const postID = profileId + '-' + '0x' + totalPostedPost.toString(16);
 
@@ -391,6 +409,7 @@ mutation addUrlData($url: String!, $pid: String!) {
 
 
         } catch (err) {
+            isPosting = false
             console.log('error: ', err)
         }
     }
@@ -465,7 +484,7 @@ mutation addUrlData($url: String!, $pid: String!) {
             <div class="relative w-full sm:max-w-2xl sm:mx-auto">
                 <div class="overflow-hidden z-0 rounded-full relative p-3">
                     <div role="form" class="relative flex z-50 bg-white rounded-full">
-                        <input type="text" bind:value={url} placeholder="enter your search here"
+                        <input type="text" bind:value={url} placeholder="enter your search URL here"
                                class="rounded-full flex-1 px-6 py-4 text-gray-700 focus:outline-none">
                         <button on:click={fetchUrlDB}
                                 class="bg-gradient-to-r from-amber-500 to-pink-500 text-white rounded-full font-semibold px-8 py-4 hover:bg-indigo-400 focus:bg-indigo-600 focus:outline-none">
@@ -646,78 +665,103 @@ mutation addUrlData($url: String!, $pid: String!) {
 </header>
 
 <div class="tagline">
-    The Omnipresent Comment Section
+    An Omnipresent Social App For Yours View
 </div>
 
 <section class="py-8 lg:py-16">
     <div class="max-w-6xl mx-auto px-4">
-        {#each comments as comment}
-            <article class="p-6 mb-6 text-base bg-white rounded-lg dark:bg-gray-900">
-            <footer class="flex justify-between items-center mb-2">
-                <div class="flex items-center">
-                    <p class="inline-flex items-center mr-3 text-sm text-gray-900 dark:text-white"><img
-                            class="mr-2 w-6 h-6 rounded-full"
-                            src="https://flowbite.com/docs/images/people/profile-picture-2.jpg"
-                            alt="Michael Gough">{comment["lensHandle"]}</p>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">
-                        <time pubdate datetime="2022-02-08"
-                              title="February 8th, 2022">Nov. 3, 2022
-                        </time>
-                    </p>
-                </div>
-                <button id="dropdownComment1Button" data-dropdown-toggle="dropdownComment1"
-                        class="inline-flex items-center p-2 text-sm font-medium text-center text-gray-400 bg-white rounded-lg hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
-                        type="button">
-                    <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20"
-                         xmlns="http://www.w3.org/2000/svg">
-                        <path
-                                d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z">
-                        </path>
-                    </svg>
-                    <span class="sr-only">Comment settings</span>
-                </button>
-                <!-- Dropdown menu -->
-                <div id="dropdownComment1"
-                     class="hidden z-10 w-36 bg-white rounded divide-y divide-gray-100 shadow dark:bg-gray-700 dark:divide-gray-600">
-                    <ul class="py-1 text-sm text-gray-700 dark:text-gray-200"
-                        aria-labelledby="dropdownMenuIconHorizontalButton">
-                        <li>
-                            <a href="#"
-                               class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Edit</a>
-                        </li>
-                        <li>
-                            <a href="#"
-                               class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Remove</a>
-                        </li>
-                        <li>
-                            <a href="#"
-                               class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Report</a>
-                        </li>
-                    </ul>
-                </div>
-            </footer>
-            <p class="text-gray-500 dark:text-gray-400">{comment["content"]}</p>
-            <div class="flex items-center mt-4 space-x-4">
-                <button type="button"
-                        class="flex items-center text-sm text-gray-500 hover:underline dark:text-gray-400">
-                    <svg aria-hidden="true" class="mr-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                         xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                    </svg>
-                    Reply
-                </button>
-            </div>
-        </article>
+        {#if !isFetching}
+            {#each comments as comment}
+                <article class="p-6 mb-6 text-base bg-white rounded-lg dark:bg-gray-900">
+                    <div class="comment-div">
+                        <div class="upDownVote">
+                            <div>+</div>
+                            <div>14</div>
+                            <div>-</div>
+                        </div>
 
+                        <div class="comment-box">
+                            <footer class="flex justify-between items-center mb-2">
+                                <div class="flex items-center">
+                                    <p class="inline-flex items-center mr-3 text-sm text-gray-900 dark:text-white"><img
+                                            class="mr-2 w-6 h-6 rounded-full"
+                                            src="https://flowbite.com/docs/images/people/profile-picture-2.jpg"
+                                            alt="Michael Gough">{comment["lensHandle"]}</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                                        <time pubdate datetime="2022-02-08"
+                                              title="February 8th, 2022">Nov. 3, 2022
+                                        </time>
+                                    </p>
+                                </div>
+<!--                                <button id="dropdownComment1Button" data-dropdown-toggle="dropdownComment1"-->
+<!--                                        class="inline-flex items-center p-2 text-sm font-medium text-center text-gray-400 bg-white rounded-lg hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700 dark:focus:ring-gray-600"-->
+<!--                                        type="button">-->
+<!--                                    <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20"-->
+<!--                                         xmlns="http://www.w3.org/2000/svg">-->
+<!--                                        <path-->
+<!--                                                d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z">-->
+<!--                                        </path>-->
+<!--                                    </svg>-->
+<!--                                    <span class="sr-only">Comment settings</span>-->
+<!--                                </button>-->
+                                <!-- Dropdown menu -->
+<!--                                <div id="dropdownComment1"-->
+<!--                                     class="hidden z-10 w-36 bg-white rounded divide-y divide-gray-100 shadow dark:bg-gray-700 dark:divide-gray-600">-->
+<!--                                    <ul class="py-1 text-sm text-gray-700 dark:text-gray-200"-->
+<!--                                        aria-labelledby="dropdownMenuIconHorizontalButton">-->
+<!--                                        <li>-->
+<!--                                            <a href="#"-->
+<!--                                               class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Edit</a>-->
+<!--                                        </li>-->
+<!--                                        <li>-->
+<!--                                            <a href="#"-->
+<!--                                               class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Remove</a>-->
+<!--                                        </li>-->
+<!--                                        <li>-->
+<!--                                            <a href="#"-->
+<!--                                               class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Report</a>-->
+<!--                                        </li>-->
+<!--                                    </ul>-->
+<!--                                </div>-->
+                            </footer>
+                            <p class="text-gray-500 dark:text-gray-400">{comment["content"]}</p>
+                            <div class="flex items-center mt-4 space-x-4">
+                                <button type="button"
+                                        class="flex items-center text-sm text-gray-500 hover:underline dark:text-gray-400">
+                                    <svg aria-hidden="true" class="mr-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                         xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                                    </svg>
+                                    Reply
+                                </button>
+                            </div>
+                        </div>
+
+
+                    </div>
+                </article>
             {:else}
 
-            <div style="display: flex; justify-content: center; font-size: x-large">
-                <h1>
-                    No post on this URL
-                </h1>
+                <div style="display: flex; justify-content: center; font-size: x-large">
+                    <h1>
+                        No post on this URL
+                    </h1>
+                </div>
+            {/each}
+        {:else}
+            <div role="status" class="max-w-sm animate-pulse">
+                <div class="h-2.5 bg-gray-200 rounded-full dark:bg-gray-700 w-48 mb-4"></div>
+                <div class="h-2 bg-gray-200 rounded-full dark:bg-gray-700 max-w-[360px] mb-2.5"></div>
+                <div class="h-2 bg-gray-200 rounded-full dark:bg-gray-700 mb-2.5"></div>
+                <div class="h-2 bg-gray-200 rounded-full dark:bg-gray-700 max-w-[330px] mb-2.5"></div>
+                <div class="h-2 bg-gray-200 rounded-full dark:bg-gray-700 max-w-[300px] mb-2.5"></div>
+                <div class="h-2 bg-gray-200 rounded-full dark:bg-gray-700 max-w-[360px]"></div>
+                <span class="sr-only">Fetching...</span>
             </div>
-        {/each}
+
+        {/if}
+
     </div>
 </section>
 
@@ -725,12 +769,42 @@ mutation addUrlData($url: String!, $pid: String!) {
 
     <div class="comment-content">
         <input type="text" bind:value={userEnteredContent} class="comment-input">
-        <button type="button" on:click={savePost}
+        {#if !isPosting}
+            <button type="button" on:click={savePost}
                 class="text-white bg-gradient-to-br from-pink-500 to-orange-400 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-pink-200 dark:focus:ring-pink-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center w-24">
             Post
         </button>
+        {:else}
+            <button disabled type="button" class="py-2.5 px-5 mr-2 text-sm font-medium text-gray-900 bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:outline-none focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700 inline-flex items-center">
+                <svg aria-hidden="true" role="status" class="inline mr-2 w-4 h-4 text-gray-200 animate-spin dark:text-gray-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>
+                    <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="#1C64F2"/>
+                </svg>
+                Posting...
+            </button>
+        {/if}
     </div>
 
+</div>
+
+<div class="tech bg-white dark:bg-gray-900">
+    <div class="tech-heading">
+        Technologies Used
+    </div>
+    <div class="tech-logo-div">
+        <div>
+            <img class="tech-logo" src={lens} alt="lens"/>
+        </div>
+        <div>
+            <img class="tech-logo" src={polygon} alt="polygon"/>
+        </div>
+        <div>
+            <img class="tech-logo" src={graph} alt="graph"/>
+        </div>
+        <div>
+            <img class="tech-logo" src={ipfs} alt="ipfs"/>
+        </div>
+    </div>
 </div>
 
 <section class="bg-white dark:bg-gray-900">
@@ -752,8 +826,9 @@ mutation addUrlData($url: String!, $pid: String!) {
                         <a href="#">Anjay Sahoo</a>
                     </h3>
                     <span class="text-gray-500 dark:text-gray-400">Web Developer</span>
-                    <p class="mt-3 mb-4 font-light text-gray-500 dark:text-gray-400">Technical strategy
-                        of the flowbite platform and brand.</p>
+                    <p class="mt-3 mb-4 font-light text-gray-500 dark:text-gray-400">
+                        Love working on frontend <br> side, used Svelte to build LensView webpage
+                        </p>
                     <ul class="flex space-x-4 sm:mt-0">
                         <li>
                             <a href="#" class="text-gray-500 hover:text-gray-900 dark:hover:text-white">
@@ -803,8 +878,7 @@ mutation addUrlData($url: String!, $pid: String!) {
                         <a href="#">Parikshit Barua</a>
                     </h3>
                     <span class="text-gray-500 dark:text-gray-400">Backend Developer</span>
-                    <p class="mt-3 mb-4 font-light text-gray-500 dark:text-gray-400">Jese drives the technical strategy
-                        of the flowbite platform and brand.</p>
+                    <p class="mt-3 mb-4 font-light text-gray-500 dark:text-gray-400">Building on Lens Protocol, currently working on @LensView</p>
                     <ul class="flex space-x-4 sm:mt-0">
                         <li>
                             <a href="#" class="text-gray-500 hover:text-gray-900 dark:hover:text-white">
@@ -853,6 +927,49 @@ mutation addUrlData($url: String!, $pid: String!) {
 <style>
     .productName {
         font-family: bely-display;
+    }
+
+    .comment-div{
+        display: flex;
+        gap: 2rem;
+    }
+
+    .upDownVote{
+        display: flex;
+        padding: 0.6rem;
+        background-color: #374151;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+        border-radius: 5px;
+    }
+
+    .plusMinus{
+
+    }
+
+    .tech{
+        padding: 3rem;
+    }
+
+    .tech-heading{
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        font-weight: 800;
+        color: white;
+        display: flex;
+        justify-content: center;
+        font-size: xx-large;
+        margin-bottom: 3rem;
+    }
+
+    .tech-logo-div{
+        display: flex;
+        justify-content: space-evenly;
+    }
+
+    .tech-logo{
+        height: 14rem;
+        width: 14rem;
     }
 
     .logo {
@@ -978,18 +1095,18 @@ mutation addUrlData($url: String!, $pid: String!) {
     }
 
     .comment {
-        position: fixed;
-        left: 20%;
-        padding: 1rem;
-        background-color: white;
-        border-radius: 5px;
-        top: 87vh;
+        display: flex;
+        justify-content: center;
     }
 
     .comment-content {
         display: flex;
         gap: 1rem;
         align-items: center;
+        padding: 1rem;
+        background-color: white;
+        border-radius: 5px;
+        margin-bottom: 3rem;
     }
 
     .comment-input {
