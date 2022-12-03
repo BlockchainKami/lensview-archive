@@ -40,7 +40,7 @@
             await console.log("User profile : " + JSON.stringify(userProfile))
 
             profileId = userProfile["id"];
-            totalPostedPost = userProfile["stats"]["totalPosts"] + 1;
+            totalPostedPost = userProfile["stats"]["totalPosts"] + 4;
 
             console.log("Profile Id : " + profileId + " totalPostedPost : " + totalPostedPost);
         } catch (err) {
@@ -85,9 +85,9 @@
     let comments = [];
     const query = `
 query getUrlData($url: String) {
-        getURL(url: $url) {
-            url
-            publications
+        getResponse(url: $url) {
+            lensHandle
+            content
         }
     }
 `
@@ -106,15 +106,14 @@ query getUrlData($url: String) {
             }).then(res => res.json()).then(async data => {
 
                 console.log("Data from Fetch: " + data)
-                const publicationIDs = data['data']['getURL']["publications"]
-                console.log("Publication ID: ", publicationIDs)
+                const response = data['data']['getResponse'];
 
-                const response = await getLensContent(publicationIDs)
                 comments = [...response];
                 if(comments.length === 0){
                     console.log("No Post ")
                 }
-                console.log("Response : " + JSON.stringify(response))
+
+                console.log("comment : " + comments)
             })
         } else {
             console.log("Empty Url");
@@ -310,25 +309,26 @@ mutation addUrlData($url: String!, $pid: String!) {
     const uploadToIPFS = async () => {
 
         /*** Web3.storage ***/
-        // const client = makeStorageClient()
-        // const cid = await client.put(makeFileObjects())
-        // console.log('stored files with cid:', cid)
-        // const uri = `https://${cid}.ipfs.w3s.link/metaData.json`
+        const client = makeStorageClient()
+        const cid = await client.put(makeFileObjects())
+        console.log('stored files with cid:', cid)
+        const uri = `https://${cid}.ipfs.w3s.link/metaData.json`
 
         /****** Infura ****/
-        const metaData = {
-            version: '2.0.0',
-            content: userEnteredContent,
-            description: userEnteredContent,
-            name: `Post by @${profile.handle}`,
-            external_url: `https://lenster.xyz/u/${profile.handle}`,
-            metadata_id: uuid(),
-            mainContentFocus: 'TEXT_ONLY',
-            attributes: [],
-            locale: 'en-US'
-        }
-        const added = await client.add(JSON.stringify(metaData))
-        const uri = `https://ipfs.infura.io/ipfs/${added.path}`
+        // const metaData = {
+        //     version: '2.0.0',
+        //     content: userEnteredContent,
+        //     description: userEnteredContent,
+        //     name: `Post by @${profile.handle}`,
+        //     external_url: `https://lenster.xyz/u/${profile.handle}`,
+        //     metadata_id: uuid(),
+        //     mainContentFocus: 'TEXT_ONLY',
+        //     attributes: [],
+        //     locale: 'en-US'
+        // }
+        // const added = await client.add(JSON.stringify(metaData))
+        // const uri = `https://ipfs.infura.io/ipfs/${added.path}`
+
         console.log("URI : " + uri);
         return uri
     }
@@ -658,7 +658,7 @@ mutation addUrlData($url: String!, $pid: String!) {
                     <p class="inline-flex items-center mr-3 text-sm text-gray-900 dark:text-white"><img
                             class="mr-2 w-6 h-6 rounded-full"
                             src="https://flowbite.com/docs/images/people/profile-picture-2.jpg"
-                            alt="Michael Gough">{comment["handle"]}</p>
+                            alt="Michael Gough">{comment["lensHandle"]}</p>
                     <p class="text-sm text-gray-600 dark:text-gray-400">
                         <time pubdate datetime="2022-02-08"
                               title="February 8th, 2022">Nov. 3, 2022
