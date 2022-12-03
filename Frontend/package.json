@@ -32,6 +32,8 @@
   "dependencies": {
     "buffer": "^6.0.3",
     "ipfs-http-client": "^59.0.0",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "minimist": "^1.2.5",
+    "web3.storage": "^3.1.0"
   }
 }
