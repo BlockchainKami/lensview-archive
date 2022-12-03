@@ -14,6 +14,7 @@
     import {parseJwt} from "../utils.js";
     import PROFILE from "./profile-store.js"
     import getLensContent from '../lensPublication'
+    import {onMount} from "svelte";
 
 
     /**
@@ -25,6 +26,7 @@
     let userProfile;
     let profileId;
     let totalPostedPost;
+    let url = ($page.url.searchParams.has('url')) ? $page.url.searchParams.get('url') : "";
 
     const getUserProfile = async (address) => {
         try {
@@ -80,8 +82,7 @@
     /**
      * Description : Post Fetch
      */
-    $: comments = [];
-    $: url = "abc";
+    let comments = [];
     const query = `
 query getUrlData($url: String) {
         getURL(url: $url) {
@@ -92,29 +93,37 @@ query getUrlData($url: String) {
 `
 
 
-    const fetchUrlDB = (urlString) => {
+    const fetchUrlDB = () => {
+        if (url) {
+            console.log("Fetching for URL: " + url);
+            fetch('http://127.0.0.1:5000', {
+                method: 'POST',
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    query: query,
+                    variables: {url: url}
+                })
+            }).then(res => res.json()).then(async data => {
 
-        fetch('http://127.0.0.1:5000', {
-            method: 'POST',
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-                query: query,
-                variables: {url: url}
+                console.log("Data from Fetch: " + data)
+                const publicationIDs = data['data']['getURL']["publications"]
+                console.log("Publication ID: ", publicationIDs)
+
+                const response = await getLensContent(publicationIDs)
+                comments = [...response];
+                if(comments.length === 0){
+                    console.log("No Post ")
+                }
+                console.log("Response : " + JSON.stringify(response))
             })
-        }).then(res => res.json()).then(async data => {
-
-            console.log("Data from Fetch: " + data)
-            const publicationIDs = data['data']['getURL']["publications"]
-            console.log("Publication ID: ", publicationIDs)
-
-            const response = await getLensContent(publicationIDs)
-            comments = [...response];
-            if(comments.length === 0){
-                console.log("No Post ")
-            }
-            console.log("Response : " + JSON.stringify(response))
-        })
+        } else {
+            console.log("Empty Url");
+        }
     }
+
+    onMount(() => {
+        fetchUrlDB();
+    });
 
     /*****************************************************/
 
@@ -299,23 +308,27 @@ mutation addUrlData($url: String!, $pid: String!) {
     })
 
     const uploadToIPFS = async () => {
-        const client = makeStorageClient()
-        const cid = await client.put(makeFileObjects())
-        console.log('stored files with cid:', cid)
-        const uri = `https://${cid}.ipfs.w3s.link/metaData.json`
-        // const metaData = {
-        //     version: '2.0.0',
-        //     content: userEnteredContent,
-        //     description: userEnteredContent,
-        //     name: `Post by @${profile.handle}`,
-        //     external_url: `https://lenster.xyz/u/${profile.handle}`,
-        //     metadata_id: uuid(),
-        //     mainContentFocus: 'TEXT_ONLY',
-        //     attributes: [],
-        //     locale: 'en-US'
-        // }
-        // const added = await client.add(JSON.stringify(metaData))
-        // const uri = `https://ipfs.infura.io/ipfs/${added.path}`
+
+        /*** Web3.storage ***/
+        // const client = makeStorageClient()
+        // const cid = await client.put(makeFileObjects())
+        // console.log('stored files with cid:', cid)
+        // const uri = `https://${cid}.ipfs.w3s.link/metaData.json`
+
+        /****** Infura ****/
+        const metaData = {
+            version: '2.0.0',
+            content: userEnteredContent,
+            description: userEnteredContent,
+            name: `Post by @${profile.handle}`,
+            external_url: `https://lenster.xyz/u/${profile.handle}`,
+            metadata_id: uuid(),
+            mainContentFocus: 'TEXT_ONLY',
+            attributes: [],
+            locale: 'en-US'
+        }
+        const added = await client.add(JSON.stringify(metaData))
+        const uri = `https://ipfs.infura.io/ipfs/${added.path}`
         console.log("URI : " + uri);
         return uri
     }
@@ -648,7 +661,7 @@ mutation addUrlData($url: String!, $pid: String!) {
                             alt="Michael Gough">{comment["handle"]}</p>
                     <p class="text-sm text-gray-600 dark:text-gray-400">
                         <time pubdate datetime="2022-02-08"
-                              title="February 8th, 2022">Feb. 8, 2022
+                              title="February 8th, 2022">Nov. 3, 2022
                         </time>
                     </p>
                 </div>
