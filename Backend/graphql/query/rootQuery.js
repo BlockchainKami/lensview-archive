@@ -1,6 +1,10 @@
+const {getPublicationDetails} = require( './send.js');
+const {responseType} = require ('../typeDef/responseType.js');
+
 const {
     GraphQLString,
     GraphQLObjectType,
+    GraphQLList
 } = require('graphql')
 
 const {postType} = require('../typeDef/postType')
@@ -46,7 +50,43 @@ const RootQueryType = new GraphQLObjectType({
                 }
 
   
+        },
+        getResponse: {
+            type: GraphQLList(responseType),
+            description: 'Get a post by URL',
+            args: {
+                url: {type: GraphQLString}
+            },
+            resolve: async (parent, args) =>
+            {
+                try {
+                    let data = await Comment.findOne({ url: args.url})
+                    if(data) {
+                        let res = await getPublicationDetails(data)
+                        console.log("inside query:",res)
+
+                        return res
+                    } else {
+                        return {
+                            id: -1,
+                            url: "",
+                            publications: []
+                        }
+                    }
+                } catch(err) {
+                    return {
+                        id: -1,
+                        url: "",
+                        publications: []
+                    }
+                }
+
+            }
         }
+
+
+
+
     })
 })
 
