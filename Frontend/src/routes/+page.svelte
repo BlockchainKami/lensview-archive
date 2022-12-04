@@ -100,7 +100,7 @@ query getUrlData($url: String) {
     const fetchUrlDB = () => {
         if (url) {
             console.log("Fetching for URL: " + url);
-            fetch('http://127.0.0.1:5000', {
+            fetch('https://lensview-backend.onrender.com', {
                 method: 'POST',
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({
@@ -146,7 +146,7 @@ mutation addUrlData($url: String!, $pid: String!) {
     const newUrl = (urlString, pid) => {
         isFetching = true
         console.log("newUrl called");
-        fetch('http://127.0.0.1:5000', {
+        fetch('https://lensview-backend.onrender.com', {
             method: 'POST',
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -177,7 +177,7 @@ mutation addUrlData($url: String!, $pid: String!) {
     const addPublication = (urlString, pid) => {
         isFetching = true
         console.log("addPublication");
-        fetch('http://127.0.0.1:5000', {
+        fetch('https://lensview-backend.onrender.com', {
             method: 'POST',
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
